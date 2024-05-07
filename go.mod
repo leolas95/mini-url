@@ -7,6 +7,8 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 )
 
+require github.com/google/uuid v1.6.0 // indirect
+
 require (
 	github.com/aws/aws-lambda-go v1.47.0
 	github.com/bytedance/sonic v1.11.6 // indirect
