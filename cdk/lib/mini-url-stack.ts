@@ -1,8 +1,9 @@
 import * as cdk from 'aws-cdk-lib';
-import { Construct } from 'constructs';
+import {CfnOutput, RemovalPolicy} from 'aws-cdk-lib';
+import {Construct} from 'constructs';
 import * as lambda from 'aws-cdk-lib/aws-lambda'
 import * as apigw from 'aws-cdk-lib/aws-apigateway'
-import {CfnOutput} from "aws-cdk-lib";
+import * as dynamo from 'aws-cdk-lib/aws-dynamodb'
 
 export class MiniUrlStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -18,6 +19,14 @@ export class MiniUrlStack extends cdk.Stack {
     const api = new apigw.LambdaRestApi(this, 'LeoApi', {
       handler: miniUrlLambda,
     });
+
+    const urlsTable = new dynamo.TableV2(this, "UrlsTable", {
+      tableName: "urls",
+      partitionKey: {name: "id", type: dynamo.AttributeType.STRING},
+      sortKey: {name: "long_url", type: dynamo.AttributeType.STRING},
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+    urlsTable.grantReadWriteData(miniUrlLambda);
 
     new CfnOutput(this, 'ApiURL', {
       value: api.url,

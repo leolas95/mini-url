@@ -12,8 +12,8 @@ z: $(ARTIFACTS_DIR)/$(DEPLOYMENT_HANDLER)
 	@echo "Compressing deployment package"
 	cd $(ARTIFACTS_DIR) && zip -r ../$(DEPLOYMENT_DIR)/$(DEPLOYMENT_PACKAGE) ./*
 
-# build the binaries
-$(ARTIFACTS_DIR)/$(DEPLOYMENT_HANDLER):
+# build the binaries whenever a .go file inside SRC_DIR changes
+$(ARTIFACTS_DIR)/$(DEPLOYMENT_HANDLER): $(shell find $(SRC_DIR) -type f -name *.go)
 # create artifacts and deployment dirs if not exists
 	@echo "Creating artifacts directories"
 	mkdir -p $(ARTIFACTS_DIR) $(DEPLOYMENT_DIR)
