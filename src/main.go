@@ -17,6 +17,17 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
+func AddUrl(request events.APIGatewayProxyRequest) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		scheme := c.Request.URL.Scheme
+		host := request.Headers["Host"]
+		stage := request.RequestContext.Stage
+		requestPath := request.Path
+		url := scheme + "://" + host + "/" + stage + requestPath
+		c.Set("ApiGatewayURL", url)
+	}
+}
+
 func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	err := db.Init()
 	if err != nil {
@@ -30,8 +41,10 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	}
 
 	r := gin.Default()
+	r.Use(AddUrl(request))
 
 	r.POST("/urls", Create)
+	r.GET("/urls/:url", Translate)
 
 	//r.Run(":8080")
 	//return events.APIGatewayProxyResponse{}, nil
@@ -46,7 +59,7 @@ func main() {
 	//	MultiValueHeaders:               nil,
 	//	QueryStringParameters:           nil,
 	//	MultiValueQueryStringParameters: nil,
-	//	PathParameters:                  nil,
+	//	PathParameters:                  map[string]string{"url": "40c55c4a-269a-45be-9e13-ab0c2f424b36"},
 	//	StageVariables:                  nil,
 	//	RequestContext:                  events.APIGatewayProxyRequestContext{},
 	//	Body:                            "",

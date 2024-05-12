@@ -23,7 +23,6 @@ export class MiniUrlStack extends cdk.Stack {
     const urlsTable = new dynamo.TableV2(this, "UrlsTable", {
       tableName: "urls",
       partitionKey: {name: "id", type: dynamo.AttributeType.STRING},
-      sortKey: {name: "long_url", type: dynamo.AttributeType.STRING},
       removalPolicy: RemovalPolicy.DESTROY,
     });
     urlsTable.grantReadWriteData(miniUrlLambda);

@@ -10,11 +10,11 @@ import (
 	"net/http"
 )
 
-type Input struct {
+type CreateInput struct {
 	URL string `json:"url"`
 }
 
-type Result struct {
+type CreateResult struct {
 	ShortURL string `json:"short_url"`
 }
 
@@ -23,15 +23,16 @@ func GenerateUniqueID(s string) (short string) {
 }
 
 func Create(c *gin.Context) {
-	var input Input
+	var input CreateInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
 
 	// get unique id
 	id := GenerateUniqueID(input.URL)
+
 	// get api base path
-	short := c.Request.URL.Scheme + "://" + c.Request.Host + c.Request.URL.Path + "/" + id
+	short := c.GetString("ApiGatewayURL") + "/" + id
 
 	// store shorturl, longurl on db
 	item := dynamodb.PutItemInput{
@@ -47,6 +48,6 @@ func Create(c *gin.Context) {
 	}
 
 	// return shorturl to user
-	res := Result{ShortURL: short}
+	res := CreateResult{ShortURL: short}
 	c.JSON(http.StatusOK, &res)
 }
