@@ -8,6 +8,7 @@ import (
 	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
 	"github.com/gin-gonic/gin"
 	"github.com/leolas95/mini-url/src/db"
+	"github.com/leolas95/mini-url/src/middleware"
 	"net/http"
 )
 
@@ -15,17 +16,6 @@ var ginLambda *ginadapter.GinLambda
 
 type ErrorResponse struct {
 	Message string `json:"message"`
-}
-
-func AddUrl(request events.APIGatewayProxyRequest) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		scheme := c.Request.URL.Scheme
-		host := request.Headers["Host"]
-		stage := request.RequestContext.Stage
-		requestPath := request.Path
-		url := scheme + "://" + host + "/" + stage + requestPath
-		c.Set("ApiGatewayURL", url)
-	}
 }
 
 func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
@@ -41,7 +31,7 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	}
 
 	r := gin.Default()
-	r.Use(AddUrl(request))
+	r.Use(middleware.AddUrl(request))
 
 	r.POST("/urls", Create)
 	r.GET("/urls/:url", Translate)

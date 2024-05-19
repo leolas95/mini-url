@@ -1,14 +1,13 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
+	"context"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/gin-gonic/gin"
 	"github.com/leolas95/mini-url/src/db"
-	"io"
+	"github.com/leolas95/mini-url/src/util"
 	"net/http"
 	"net/url"
 )
@@ -21,7 +20,7 @@ type CreateInput struct {
 	URL string `json:"url"`
 }
 
-type CreateResult struct {
+type CreateResponse struct {
 	ShortURL string `json:"short_url"`
 }
 
@@ -35,32 +34,16 @@ type GenUrlResponseBody struct {
 	Hash string `json:"hash"`
 }
 
-func makePostRequest(url, contentType string, body GenUrlRequestBody) (*GenUrlResponseBody, error) {
-	marshaled, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
+func saveItemOnDB(id, longUrl string) error {
+	item := dynamodb.PutItemInput{
+		Item: map[string]types.AttributeValue{
+			"id":       &types.AttributeValueMemberS{Value: id},
+			"long_url": &types.AttributeValueMemberS{Value: longUrl},
+		},
+		TableName: aws.String("urls"),
 	}
-
-	postBody := bytes.NewBuffer(marshaled)
-	resp, err := http.Post(url, contentType, postBody)
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-
-	bytesResp, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var serviceResponse GenUrlResponseBody
-	err = json.Unmarshal(bytesResp, &serviceResponse)
-	if err != nil {
-		return nil, err
-	}
-
-	return &serviceResponse, nil
+	_, err := db.DB.PutItem(context.TODO(), &item)
+	return err
 }
 
 func Create(c *gin.Context) {
@@ -70,38 +53,37 @@ func Create(c *gin.Context) {
 		return
 	}
 
-	// get unique id
 	endpointUrl, err := url.JoinPath(genUrlIdServiceUrl, "/urls")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "error building url endpoint for hash generation service: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error building url endpoint for hash generation service: " + err.Error()})
 		return
 	}
 
+	// get unique id
 	body := GenUrlRequestBody{Url: input.URL}
-	genUrlResponse, err := makePostRequest(endpointUrl, "application/json", body)
+	response, err := util.MakePostRequest(endpointUrl, "application/json", body)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "error making POST request to hash generation service:" + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error making POST request to hash generation service:" + err.Error()})
+		return
+	}
+	genUrlResponse, ok := response.(*GenUrlResponseBody)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error parsing hash generation service response"})
 		return
 	}
 	id := genUrlResponse.Hash
 
-	// get this service api base path
+	// get our own api base path
 	short := c.GetString("ApiGatewayURL") + "/" + id
 
 	// save data on db
-	item := dynamodb.PutItemInput{
-		Item: map[string]types.AttributeValue{
-			"id":       &types.AttributeValueMemberS{Value: id},
-			"long_url": &types.AttributeValueMemberS{Value: input.URL},
-		},
-		TableName: aws.String("urls"),
-	}
-	_, err = db.DB.PutItem(c, &item)
+	err = saveItemOnDB(id, input.URL)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error saving item on DB: " + err.Error()})
+		return
 	}
 
 	// return shorturl to user
-	res := CreateResult{ShortURL: short}
+	res := CreateResponse{ShortURL: short}
 	c.JSON(http.StatusOK, &res)
 }
