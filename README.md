@@ -10,6 +10,8 @@ When the short URL is used, you get redirected to the original location.
 ### Shorten URL
 ```http request
 POST /urls
+
+url={long_url}
 ```
 
 Returns the short version of the URL
