@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: miniurl-deploy
+  labels:
+    app: miniurl
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: miniurl
+  template:
+    metadata:
+      labels:
+        app: miniurl
+    spec:
+      containers:
+        - name: my-miniurl
+          image: leolas95/miniurl:v13
+          ports:
+            - containerPort: 80

@@ -33,4 +33,7 @@ deploy: $(DEPLOYMENT_DIR)/$(DEPLOYMENT_PACKAGE)
 	cd cdk && cdk deploy -x "*.DS_Store"
 
 dbuild:
-	docker build --tag leolas95/miniurl -f Dockerfile .
+	docker build --tag leolas95/miniurl:$(v) -f Dockerfile . --no-cache --progress=plain
+
+dpush:
+	docker push leolas95/miniurl:$(v)
