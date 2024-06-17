@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
         - name: my-miniurl
-          image: leolas95/miniurl:v13
+          image: leolas95/miniurl:14
           ports:
             - containerPort: 80

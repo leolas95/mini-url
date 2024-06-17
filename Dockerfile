@@ -39,7 +39,7 @@ RUN ls .
 #RUN go test -v ./...
 
 # Deploy the application binary into a lean image
-FROM arm64v8/alpine:latest AS build-release-stage
+FROM public.ecr.aws/lambda/provided:al2023 AS build-release-stage
 
 WORKDIR /app
 
