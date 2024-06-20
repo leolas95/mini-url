@@ -31,3 +31,9 @@ $(ARTIFACTS_DIR)/$(DEPLOYMENT_HANDLER): $(shell find $(SRC_DIR) -type f -name *.
 .PHONY: deploy
 deploy: $(DEPLOYMENT_DIR)/$(DEPLOYMENT_PACKAGE)
 	cd cdk && cdk deploy -x "*.DS_Store"
+
+dbuild:
+	docker build --tag leolas95/miniurl:$(v) -f Dockerfile . --no-cache --progress=plain
+
+dpush:
+	docker push leolas95/miniurl:$(v)
